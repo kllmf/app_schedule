@@ -5,17 +5,27 @@ from django.db import models
 class DayOfTheWeek(models.Model):  # День недели
     name = models.CharField(max_length=30)
 
+    def __str__(self):
+        return self.name
+
 
 class Department(models.Model):  # Кафедра
     name = models.CharField(max_length=100, help_text="Имя кафедры")
     code = models.CharField(max_length=30)
 
+    def __str__(self):
+        return self.name
+
 
 class Course(models.Model):  # Направление
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
+    name = models.CharField(max_length=100, help_text="Имя направления")
     code = models.CharField(max_length=30)
     section = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
 
 
 class Teacher(models.Model):  # Преподователь
@@ -26,6 +36,9 @@ class Teacher(models.Model):  # Преподователь
     patronymic = models.CharField(max_length=50)
     position = models.CharField(max_length=100)  # TODO: мб создать еще одну модель
 
+    def __str__(self):
+        return '%s, %s' % (self.surname, self.first_name)
+
 
 class AcademicDiscipline(models.Model):  # Дисциплина
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
@@ -33,13 +46,22 @@ class AcademicDiscipline(models.Model):  # Дисциплина
 
     name = models.CharField(max_length=50)
 
+    def __str__(self):
+        return self.name
+
 
 class Provision(models.Model):  # Софт(оборудование)
     name = models.CharField(max_length=50)
 
+    def __str__(self):
+        return self.name
+
 
 class TypeSubject(models.Model):  # Тип предмета(с,л,лаб)
     type = models.CharField(max_length=30)
+
+    def __str__(self):
+        return self.type
 
 
 class Subject(models.Model):  # Предмет
@@ -47,12 +69,18 @@ class Subject(models.Model):  # Предмет
     academic_discipline = models.ForeignKey(AcademicDiscipline, on_delete=models.CASCADE)
     type_subject = models.ForeignKey(TypeSubject, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return '%s - %s' % (self.academic_discipline.name, self.type_subject.type)
+
 
 class Group(models.Model):  # Группа
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
 
     name = models.CharField(max_length=50)
     the_size_of_the_group = models.IntegerField()
+
+    def __str__(self):
+        return self.name
 
 
 class Curriculum(models.Model):  # Учебныц план
@@ -73,18 +101,45 @@ class WorkingHours(models.Model):  # Рабочее время преподав�
 class TypeClassroom(models.Model):  # Тип аудитории
     name = models.CharField(max_length=50)
 
+    def __str__(self):
+        return self.name
+
 
 class Classroom(models.Model):  # Аудитория
     department = models.ForeignKey(Department, null=True, on_delete=models.CASCADE)
     provision = models.ManyToManyField(Provision)
 
+    auditorium_number = models.CharField(max_length=50)
     type = models.ForeignKey(TypeClassroom, null=True, on_delete=models.CASCADE)
     capacity = models.IntegerField()
+
     # TODO: мб добавить корпус
+
+    def __str__(self):
+        return self.auditorium_number
 
 
 class Frequency(models.Model):  # Периоличность(1 нед, 2 нед ...)
     name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+
+class HalfLesson(models.Model):  # Промежуток полупары
+    time_start = models.TimeField()
+    time_end = models.TimeField()
+
+    def __str__(self):
+        return '%s - %s' % (self.time_start, self.time_end)
+
+
+class TableSchedule(models.Model):  # Общее расписание
+    semester = models.IntegerField()
+    mod_date = models.DateField()
+
+    def __str__(self):
+        return 'Семестр %s (%s)' % (self.semester, self.mod_date)
 
 
 class Schedule(models.Model):  # Занятие группы без времени
@@ -94,25 +149,9 @@ class Schedule(models.Model):  # Занятие группы без времен
     classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE)
     day_of_the_week = models.ForeignKey(DayOfTheWeek, on_delete=models.CASCADE)
     frequency = models.ForeignKey(Frequency, on_delete=models.CASCADE)
-
-
-class HalfLesson(models.Model):  # Промежуток полупары
-    time_start = models.TimeField()
-    time_end = models.TimeField()
-
-
-class TimeSchedule(models.Model):  # Занятие с учетом времени
-    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE)
     half_lesson = models.ForeignKey(HalfLesson, on_delete=models.CASCADE)
-
+    table_schedule = models.ManyToManyField(TableSchedule)
     duration = models.TimeField()
-
-
-class TableSchedule(models.Model):  # Общее расписание
-    time_schedule = models.ManyToManyField(TimeSchedule)
-
-    semester = models.IntegerField()
-    mod_date = models.DateField()
 
 
 class Exam(models.Model):  # Экзамен
