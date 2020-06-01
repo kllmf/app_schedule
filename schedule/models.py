@@ -22,7 +22,7 @@ frequency_choice = (('1 нед', '1 неделя'),
 
 class Department(models.Model):  # Кафедра
     name = models.CharField(verbose_name="Имя кафедры", max_length=100)
-    code = models.CharField(verbose_name='Кода кафедры', max_length=30)
+    code = models.CharField(verbose_name='Код кафедры', max_length=30)
 
     def __str__(self):
         return self.name
@@ -67,7 +67,7 @@ class AcademicDiscipline(models.Model):  # Дисциплина
     department = models.ForeignKey(Department, verbose_name='Кафедра', on_delete=models.CASCADE)
     course = models.ManyToManyField(Course, verbose_name='Направление')
 
-    name = models.CharField(max_length=50)
+    name = models.CharField(verbose_name='Имя дисцилины', max_length=50)
 
     def __str__(self):
         return self.name
@@ -77,6 +77,7 @@ class AcademicDiscipline(models.Model):  # Дисциплина
         verbose_name_plural = 'Дисциплины'
 
 
+# TODO: мб связать с кафедрой
 class Provision(models.Model):  # Софт(оборудование)
     name = models.CharField(verbose_name='Название софта(оборудования)', max_length=50)
 
@@ -91,6 +92,8 @@ class Provision(models.Model):  # Софт(оборудование)
 class Subject(models.Model):  # Предмет
     department = models.ForeignKey(Department, verbose_name='Кафедра', on_delete=models.CASCADE)
     academic_discipline = models.ForeignKey(AcademicDiscipline, verbose_name='Дисциплина', on_delete=models.CASCADE)
+    provision = models.ManyToManyField(Provision, verbose_name='Софт(оборудование)')
+
     type = models.CharField(verbose_name='Тип предмета', max_length=12, choices=type_subject_choice)
 
     def __str__(self):
@@ -170,7 +173,7 @@ class HalfLesson(models.Model):  # Промежуток полупары
 
 class TableSchedule(models.Model):  # Общее расписание
     semester = models.IntegerField(verbose_name='Семестр')
-    mod_date = models.DateField(verbose_name='Дата', default=datetime.date.today)
+    mod_date = models.DateField(verbose_name='Дата создания/модификации', default=datetime.date.today)
 
     def __str__(self):
         return 'Семестр %s (%s)' % (self.semester, self.mod_date)
@@ -188,22 +191,21 @@ class SpecificDate(models.Model):
         verbose_name_plural = 'Спец даты занятий'
 
 
-class Schedule(models.Model):  # Занятие группы без времени
+class Schedule(models.Model):  # Расписание занятие в один день
     group = models.ForeignKey(Group, verbose_name='Группа', on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, verbose_name='Предмет', on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, verbose_name='Преподователь', on_delete=models.CASCADE)
     classroom = models.ForeignKey(Classroom, verbose_name='Аудитория', on_delete=models.CASCADE)
     half_lesson = models.ManyToManyField(HalfLesson, verbose_name='Промежуток полупары')
-    table_schedule = models.ManyToManyField(TableSchedule, verbose_name='Общее расписание')
+    table_schedule = models.ForeignKey(TableSchedule, verbose_name='Общее расписание', on_delete=models.CASCADE)
     specific_date = models.ManyToManyField(SpecificDate, verbose_name='Спец даты занятий')
 
     frequency = models.CharField(verbose_name='Частота', max_length=12, choices=frequency_choice)
     day_of_the_week = models.CharField(verbose_name='День недели', max_length=12, choices=day_of_the_week_choice)
 
-    # duration = models.TimeField('Продолжительность')
     class Meta:
-        verbose_name = 'Расписание'
-        verbose_name_plural = 'Расписание'
+        verbose_name = 'Расписание занятия'
+        verbose_name_plural = 'Расписание занятий'
 
 
 class Exam(models.Model):  # Экзамен
@@ -227,5 +229,3 @@ class RestDay(models.Model):  # Выходной день
     class Meta:
         verbose_name = 'Выходной день'
         verbose_name_plural = 'Выходные дни'
-
-# TOOD: Попрваить max_length для choice
